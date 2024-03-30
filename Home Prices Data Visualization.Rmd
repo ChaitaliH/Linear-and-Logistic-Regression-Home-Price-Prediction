@@ -1,0 +1,271 @@
+---
+title: "Project 2 Final Data Visualization"
+author: "Chaitali Harge"
+---
+
+```{r}
+#Importing relevant libraries
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+
+install.packages("RColorBrewer")
+library(RColorBrewer)
+```
+
+
+```{r}
+#Reading data into R
+Data <- read.csv("/Users/chaitaliharge/Data Science Learnings/STAT 6021/Project 2/kc_house_data.csv", header = TRUE)
+```
+
+```{r}
+#creating new grade_binary variable 
+Data <- Data%>%
+  mutate(grade_binary = ifelse(grade <=6, "low", "high"))
+
+```
+
+
+```{r}
+#splitting the data in training and test data
+set.seed(6021) 
+sample<-sample.int(nrow(Data), floor(.50*nrow(Data)), replace = F)
+train<-Data[sample, ] 
+test<-Data[-sample, ]
+```
+
+
+```{r}
+#Bar chart of no. of bedrooms against price
+filter_bedrooms <- train%>%
+  filter(bedrooms<=7)
+
+ggplot(filter_bedrooms, aes(x=bedrooms, y=price))+
+geom_bar(stat="identity", color="blue")+
+theme(axis.text.x = element_text(angle = 90),
+plot.title = element_text(hjust = 0.5))+
+labs(x="No. of bedrooms", y="Price (USD)", title="Price by No. of bedrooms")
+```
+There is a great hike in prices for 3 and 4 bedroom houses, but the price decreases after 4 bedrooms. Logically, the price of houses with more than 5 bedrooms cannot be inexpensive. Either there are fewer observations for houses with 5 bedrooms or more, which has skewed the data, or those houses are situated in a region with relatively low house values.
+Another way to put it is that 3 and 4 are more common.
+
+
+```{r}
+#Filtering sqft of living space
+filter_living <- train%>%
+  filter(sqft_living<=5000)
+
+##Scatterplot of prices against sqft of living space
+scatter1 <- ggplot2::ggplot(filter_living, aes(x=sqft_living, y=price))+
+geom_point() +
+geom_smooth(method = "lm", se=FALSE)+
+labs(x="Sqft of interior living space", y="Price (USD)", title="Price by Sqft of living space")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+```{r}
+#filtering sqft of land space
+filter_lot <- train%>%
+  filter(sqft_lot<=250000)
+
+#scatterplot of prices against sqft of land space
+scatter2 <- ggplot2::ggplot(train, aes(x=sqft_lot, y=price))+
+geom_point()+
+geom_smooth(method = "lm", se=FALSE)+
+labs(x="Sqft of land space", y="Price (USD)", title="Price by Sqft of land space")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+
+```{r}
+#Filtering sqft of interior space above the ground level
+filter_above <- train%>%
+  filter(sqft_above>= 2500 & sqft_above<=5000)
+
+##Scatterplot of prices against sqft of interior space above ground
+scatter3 <- ggplot2::ggplot(filter_above, aes(x=sqft_above, y=price))+
+geom_point()+
+geom_smooth(method = "lm", se=FALSE)+
+labs(x="Sqft of interior space above ground", y="Price (USD)", title="Price by Sqft of living space above ground")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+#Filtering sqft space of basement
+filter_basement <- train%>%
+  filter(sqft_basement>= 1000 & sqft_basement<=2000)
+
+##Scatterplot of prices against sqft of basement
+scatter4 <- ggplot2::ggplot(filter_basement, aes(x=sqft_basement, y=price))+
+geom_point()+
+geom_smooth(method = "lm", se=FALSE)+
+labs(x="Sqft of basement", y="Price (USD)", title="Price by Sqft of basement")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+#Grid of scatterplots of sqft living, lot, above,and basement
+gridExtra::grid.arrange(scatter1, scatter2, scatter3, scatter4, ncol = 2, nrow = 2)
+```
+
+From the above scatterplots we can see a positive linear relationship between prices and sqft of living space, sqft of living spaces above the ground level and sqft of basement. Increase in these sqft areas result in increase of prices.
+
+However, if you see the scatterplot (top right) of prices against sqft of land space, the relationship between them is linear but it is very subtle. This may be because most observations are crowded below 50,000 square feet. Also, there can be a possibility that prices are inexpensive in some areas of Washington. As a result, this scatterplot may be biased and fail to demonstrate the linear link between prices and square feet of land.
+
+
+
+```{r}
+##Scatterplot of prices against sqft of living space for nearest 15 neighbours
+scatter5 <- ggplot2::ggplot(train, aes(x=sqft_living15, y=price))+
+geom_point()+
+geom_smooth(method = "lm", se=FALSE)+
+labs(x="Sqft of living space", y="Price (USD)", title="Nearest 15 neighbours")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+```{r}
+##Scatterplot of prices against sqft of land space for nearest 15 neighbours
+scatter6 <- ggplot2::ggplot(train, aes(x=sqft_lot15, y=price))+
+geom_point()+
+geom_smooth(method = "lm", se=FALSE)+
+labs(x="Sqft of land space", y="Price (USD)", title="Nearest 15 neighbours")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+#Grid of scatterplots of sqft living, and sqft lot of nearest 15 neighbours
+gridExtra::grid.arrange(scatter5, scatter6, ncol = 2, nrow = 1)
+```
+
+In addition, we compared the price of houses for the 15 closest neighbors based on living space and land space. From above scatter plots, it is clear that there is a direct correlation between price and square feet. Prices rise with increased square footage area.
+
+
+```{r}
+#mean prices against condition 
+ggplot(train, aes(x=condition, y=price))+
+  geom_bar(position="dodge", stat="summary", fun="mean", fill="lightblue")+
+  labs(x="Condition", y="Mean price", title="Mean Price by condition of house")
+```
+
+We created a bar chart to check the relationship between house prices and condition of the house. Although there is a price increase from condition 2 to condition 3, the condition of the house does not significantly affect price.
+
+```{r}
+#filtering conditions
+filter_condition <- train%>%
+  filter(condition >= 2)
+
+#Factorising conditions 
+filter_condition$condition <-factor(filter_condition$condition, 
+levels=c('2','3','4','5'))
+
+#box plot of prices against conditions
+ggplot(filter_condition, aes(x=condition, y=price))+
+geom_boxplot(color='blue', outlier.color='orange')+
+labs(x="Condition", y="Price (USD)", title ="Box plot of price by condition") +
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+The box plot of price against condition demonstrates the same result, that there is no significant increase in price by improving condition. Additionally, the distribution of data points is somewhat uniform across all conditions. Condition might not be the key differentiator for setting prices.
+
+
+```{r}
+#mean price against grade
+ggplot(train, aes(x=grade, y=price))+
+  geom_bar(position="dodge", stat="summary", fun="mean", fill="lightblue")+
+  labs(x="Grade of house", y="Mean price", title="Mean Price by grade of house")
+```
+
+The bar chart of mean prices versus grade of house provides an impressive visual clue. As the grade rises, the prices exhibit an increasing trend. Based on this plot, we can say that a house's grade may have a big impact on prices. But further in depth statistical analysis is needed to provide a conclusive answer.
+
+
+```{r}
+#filtering grades
+filter_grade <- train%>%
+  filter(grade >= 7)
+
+#Factorizing grades 
+filter_grade$grade<-factor(filter_grade$grade,
+levels=c("7","8","9","10"))
+
+#box plot of prices against grades
+ggplot(filter_grade, aes(x=grade, y=price))+
+geom_boxplot(color="blue", outlier.color = "orange" )+
+labs(x="Grade", y="Price (USD)", title ="Box plot of price by grade")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+To check the distribution of data points by grade, we created a box plot. Prices rise as the grade rises. There are numerous observations that are not graded but are priced higher than grade 10. Those must be really high-grade residences. Thus, grades could have a significant effect on house prices.
+
+
+*** Logistic regression plots***
+
+```{r}
+#Density plots of quantitative variables and new binary variable
+dp1<-ggplot2::ggplot(train,aes(x=sqft_living, fill=grade_binary))+
+geom_density()+
+labs(title="Grade category by Sqft living space")
+
+dp2<-ggplot2::ggplot(train,aes(x=sqft_lot, fill=grade_binary))+
+geom_density()+
+labs(title="Grade category by Sqft lot")
+
+dp3<-ggplot2::ggplot(train,aes(x=sqft_above, fill=grade_binary))+
+geom_density()+
+labs(title="Grade category by Sqft above")
+
+dp4<-ggplot2::ggplot(train,aes(x=sqft_basement, fill=grade_binary))+
+geom_density()+
+labs(title="Grade category by Sqft basement")
+
+gridExtra::grid.arrange(dp1, dp2, dp3, dp4, ncol = 2, nrow = 2)
+```
+
+Low grade houses have a higher proportion of sq ft of living space than high grade houses. For sqft_above as well, low grade houses are more in proportion than high grades. 
+However, we see no significant proportion for high and low in sqft_lot and sqft_basement.
+
+
+```{r}
+#Bar charts for categorical variables condition and grade_binary
+chart1<-ggplot2::ggplot(train, aes(x=condition, fill=grade_binary))+
+geom_bar(position = "fill")+
+labs(x="Condition", y="Proportion",
+title="Prop of grade_binary v condition")
+
+chart2<-ggplot2::ggplot(filter_bedrooms, aes(x=bedrooms, fill=grade_binary))+
+geom_bar(position = "fill")+
+labs(x="No. of bedrooms", y="Proportion",
+title="Prop of grade_binary v bedrooms")
+
+chart3<-ggplot2::ggplot(train, aes(x=floors, fill=grade_binary))+
+geom_bar(position = "fill")+
+labs(x="No. of floors", y="Proportion",
+title="Prop of grade_binary v floors")
+
+gridExtra::grid.arrange(chart1, chart2, chart3, ncol = 2, nrow = 2)
+```
+
+For conditions 1 and 2, we can see (top left) the significant proportion of low grade houses. But as the condition gets better i.e. 3, 4, 5, high grade houses have higher proportion.
+For bedrooms, 1 and 2 bedroom houses show some low graded houses, but otherwise most of the houses are high graded.
+In case of bathrooms, only few houses are labelled low grade, and most of the houses are high grade houses.
+Overall, high grade houses have higher proportion over low grade houses.
+
+
+
+
+
+
+
+
+
+
+
